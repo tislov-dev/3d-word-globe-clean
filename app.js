@@ -175,9 +175,6 @@ async function submitFeedback(word, isInline = false) {
         // Create GitHub Issue (opens in new tab)
         await createGitHubIssue(word, feedback);
         
-        // Also save locally for immediate display
-        saveFeedbackLocally(word, feedback);
-        
         // Show success message
         const successId = isInline ? `inline-feedback-success-${word}` : `feedback-success-${word}`;
         const successMsg = document.getElementById(successId);
@@ -185,7 +182,7 @@ async function submitFeedback(word, isInline = false) {
         successMsg.innerHTML = `
             <div>GitHub issue page opened!</div>
             <div style="font-size: 11px; margin-top: 5px;">
-                Please submit the pre-filled issue on GitHub. Also saved locally.
+                Please submit the pre-filled issue on GitHub to share your feedback.
             </div>
         `;
         
@@ -204,15 +201,14 @@ async function submitFeedback(word, isInline = false) {
     } catch (error) {
         console.error('Error opening GitHub issue page:', error);
         
-        // Fallback to localStorage only
-        saveFeedbackLocally(word, feedback);
+        // GitHub Issue creation failed
         
         const successMsg = document.getElementById(successId);
         successMsg.style.display = 'block';
         successMsg.innerHTML = `
-            <div style="color: #ff9800;">Feedback saved locally</div>
+            <div style="color: #f44336;">Could not open GitHub</div>
             <div style="font-size: 11px; margin-top: 5px;">
-                Could not open GitHub. Feedback saved to your browser.
+                Please try again or create the issue manually.
             </div>
         `;
         
@@ -259,7 +255,7 @@ ${feedback.comments || 'No additional comments provided.'}
 async function loadFeedback(word) {
     let allFeedback = [];
     
-    // Try to load from GitHub Issues first
+    // Load feedback only from GitHub Issues
     try {
         const issues = await fetchGitHubIssues(word);
         
@@ -267,31 +263,12 @@ async function loadFeedback(word) {
             allFeedback = issues.map(issue => parseIssueToFeedback(issue));
         }
     } catch (error) {
-        console.warn('Could not load GitHub issues, will only show localStorage:', error);
+        console.warn('Could not load GitHub issues:', error);
+        return []; // Return empty array if GitHub Issues can't be loaded
     }
     
-    // Also load localStorage feedback
-    const localFeedback = loadFeedbackLocally(word);
-    
-    // Combine GitHub and local feedback, removing duplicates
-    const combinedFeedback = [...allFeedback];
-    
-    // Add local feedback that aren't already in GitHub issues
-    localFeedback.forEach(local => {
-        const isDuplicate = allFeedback.some(github => 
-            Math.abs(new Date(github.timestamp) - new Date(local.timestamp)) < 60000 && // Within 1 minute
-            github.name === local.name &&
-            github.rating === local.rating
-        );
-        
-        if (!isDuplicate) {
-            combinedFeedback.push(local);
-        }
-    });
-    
-    
     // Sort by timestamp (newest first)
-    return combinedFeedback.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    return allFeedback.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 }
 
 async function fetchGitHubIssues(word) {
@@ -392,18 +369,7 @@ function parseIssueToFeedback(issue) {
     };
 }
 
-// Fallback localStorage functions
-function saveFeedbackLocally(word, feedback) {
-    const key = `feedback_${word}`;
-    let existingFeedback = JSON.parse(localStorage.getItem(key) || '[]');
-    existingFeedback.push(feedback);
-    localStorage.setItem(key, JSON.stringify(existingFeedback));
-}
-
-function loadFeedbackLocally(word) {
-    const key = `feedback_${word}`;
-    return JSON.parse(localStorage.getItem(key) || '[]');
-}
+// Feedback is now managed exclusively through GitHub Issues
 
 function setRating(word, rating, isInline = false) {
     // Determine the correct IDs based on whether it's inline or not
@@ -466,26 +432,9 @@ function showAddFeedbackForm(word) {
 }
 
 function deleteFeedback(word, feedbackIndex) {
-    if (!confirm('Are you sure you want to delete this feedback?')) {
-        return;
-    }
-    
-    // Load current feedback
-    const key = `feedback_${word}`;
-    let existingFeedback = JSON.parse(localStorage.getItem(key) || '[]');
-    
-    // Remove the feedback at the specified index
-    if (feedbackIndex >= 0 && feedbackIndex < existingFeedback.length) {
-        existingFeedback.splice(feedbackIndex, 1);
-        
-        // Save back to localStorage
-        localStorage.setItem(key, JSON.stringify(existingFeedback));
-        
-        // Refresh the dashboard to show updated feedback
-        if (window.globe) {
-            window.globe.showDashboard(word);
-        }
-    }
+    // Since feedback is now stored only in GitHub Issues,
+    // deletion must be done through GitHub directly
+    alert('To delete feedback, please go to the GitHub Issues page and close/delete the corresponding issue.');
 }
 
 // Feedback data cleared for clean deployment
@@ -1186,10 +1135,7 @@ class WordGlobe {
         }, 300);
     }
     
-    loadFeedback(word) {
-        const key = `feedback_${word}`;
-        return JSON.parse(localStorage.getItem(key) || '[]');
-    }
+    // Feedback loading now handled by global loadFeedback function
     
     renderFeedbackForm(word, isInline = false) {
         const formId = isInline ? `inline-feedback-form-${word}` : `feedback-form-${word}`;
@@ -1271,25 +1217,16 @@ class WordGlobe {
             `;
         }
         
-        // Show all team feedback, not just the latest
+        // Show all team feedback from GitHub Issues
         const feedbackHTML = feedbackList.map((feedback, index) => {
             const sanitizedFeedback = sanitizeFeedback(feedback);
             const stars = '★'.repeat(sanitizedFeedback.rating) + '☆'.repeat(5 - sanitizedFeedback.rating);
-            const isFromGitHub = sanitizedFeedback.githubUrl;
-            const canDelete = !isFromGitHub; // Only allow deleting local feedback
             
             return `
                 <div style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px 0; ${index === feedbackList.length - 1 ? 'border-bottom: none;' : ''}" data-feedback-index="${index}">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <strong style="color: #64b5f6;">${sanitizedFeedback.name}</strong>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="color: #ffd700; font-size: 16px;">${stars}</span>
-                            ${canDelete ? `
-                                <button class="feedback-btn feedback-delete" data-word="${word}" data-feedback-index="${index}" data-action="delete">
-                                    Delete
-                                </button>
-                            ` : ''}
-                        </div>
+                        <span style="color: #ffd700; font-size: 16px;">${stars}</span>
                     </div>
                     ${sanitizedFeedback.comments ? `
                         <div style="margin: 8px 0; font-style: italic; color: #e0e0e0;">
@@ -1298,11 +1235,9 @@ class WordGlobe {
                     ` : ''}
                     <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #aaa;">
                         <span>${new Date(sanitizedFeedback.timestamp).toLocaleDateString()}</span>
-                        ${isFromGitHub ? `
-                            <a href="${sanitizedFeedback.githubUrl}" target="_blank" style="color: #64b5f6; text-decoration: none;" rel="noopener noreferrer">
-                                GitHub Issue →
-                            </a>
-                        ` : '<span style="color: #ff9800;">Local</span>'}
+                        <a href="${sanitizedFeedback.githubUrl}" target="_blank" style="color: #64b5f6; text-decoration: none;" rel="noopener noreferrer">
+                            GitHub Issue →
+                        </a>
                     </div>
                 </div>
             `;

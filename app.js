@@ -257,13 +257,10 @@ async function loadFeedback(word) {
     
     // Load feedback only from GitHub Issues
     try {
-        console.log(`Loading feedback for word: ${word} from repo: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`);
         const issues = await fetchGitHubIssues(word);
-        console.log(`Found ${issues ? issues.length : 0} issues for word: ${word}`);
         
         if (issues && issues.length > 0) {
             allFeedback = issues.map(issue => parseIssueToFeedback(issue));
-            console.log(`Parsed ${allFeedback.length} feedback items`);
         }
     } catch (error) {
         console.warn('Could not load GitHub issues:', error);
@@ -436,30 +433,7 @@ function showAddFeedbackForm(word) {
 
 // Feedback deletion handled through GitHub Issues interface
 
-// Clear all existing feedback data on app initialization (for clean start)
-function clearAllFeedback() {
-    // Get all localStorage keys that start with 'feedback_'
-    const feedbackKeys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('feedback_')) {
-            feedbackKeys.push(key);
-        }
-    }
-    
-    // Remove all feedback data
-    feedbackKeys.forEach(key => {
-        localStorage.removeItem(key);
-    });
-    
-    // Also clear any session storage
-    sessionStorage.clear();
-    
-    console.log(`Cleared ${feedbackKeys.length} feedback entries and session storage for clean start`);
-}
-
-// Clear all feedback on app initialization (remove this after deployment)
-clearAllFeedback();
+// Clean production deployment ready
 
 window.submitFeedback = submitFeedback;
 window.setRating = setRating;

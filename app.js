@@ -405,9 +405,11 @@ function escapeHtml(unsafe) {
 }
 
 function isValidGitHubUrl(url) {
+    if (!url || typeof url !== 'string') return false;
     try {
         const urlObj = new URL(url);
-        return urlObj.hostname === 'github.com' && 
+        return urlObj.protocol === 'https:' &&
+               urlObj.hostname === 'github.com' && 
                urlObj.pathname.startsWith(`/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/`);
     } catch {
         return false;
@@ -1072,21 +1074,21 @@ class WordGlobe {
         
         content.innerHTML = `
             <div class="dashboard-header">
-                <div class="dashboard-title">${word}</div>
+                <div class="dashboard-title">${escapeHtml(word)}</div>
                 <div class="dashboard-subtitle">Dashboard Overview</div>
             </div>
             
             <div class="card">
                 <div class="card-title">Description</div>
-                <div class="card-content">${data.description}</div>
+                <div class="card-content">${escapeHtml(data.description)}</div>
             </div>
             
             <div class="card">
                 <div class="card-title">Brand Information</div>
                 <div class="card-content">
-                    <strong>Brand:</strong> ${data.brand}<br>
-                    <strong>Tagline:</strong> ${data.tagline}<br>
-                    <strong>Theme:</strong> <span style="color: ${this.themes[data.category].color}; font-weight: bold;">${data.category}</span>
+                    <strong>Brand:</strong> ${escapeHtml(data.brand)}<br>
+                    <strong>Tagline:</strong> ${escapeHtml(data.tagline)}<br>
+                    <strong>Theme:</strong> <span style="color: ${escapeHtml(this.themes[data.category].color)}; font-weight: bold;">${escapeHtml(data.category)}</span>
                 </div>
             </div>
             
@@ -1094,7 +1096,7 @@ class WordGlobe {
                 <div class="card-title">Mascot</div>
                 <div class="card-content">
                     <div class="mascot"></div>
-                    <div style="text-align: center; margin-top: 8px;">${data.mascot}</div>
+                    <div style="text-align: center; margin-top: 8px;">${escapeHtml(data.mascot)}</div>
                 </div>
             </div>
             
@@ -1133,13 +1135,15 @@ class WordGlobe {
     // Feedback loading now handled by global loadFeedback function
     
     renderFeedbackForm(word, isInline = false) {
-        const formId = isInline ? `inline-feedback-form-${word}` : `feedback-form-${word}`;
-        const nameId = isInline ? `inline-feedback-name-${word}` : `feedback-name-${word}`;
-        const emailId = isInline ? `inline-feedback-email-${word}` : `feedback-email-${word}`;
-        const ratingId = isInline ? `inline-rating-${word}` : `rating-${word}`;
-        const ratingInputId = isInline ? `inline-rating-input-${word}` : `rating-input-${word}`;
-        const commentsId = isInline ? `inline-feedback-comments-${word}` : `feedback-comments-${word}`;
-        const successId = isInline ? `inline-feedback-success-${word}` : `feedback-success-${word}`;
+        // Sanitize word for safe use in HTML IDs
+        const safeWord = escapeHtml(word).replace(/[^a-zA-Z0-9-_]/g, '');
+        const formId = isInline ? `inline-feedback-form-${safeWord}` : `feedback-form-${safeWord}`;
+        const nameId = isInline ? `inline-feedback-name-${safeWord}` : `feedback-name-${safeWord}`;
+        const emailId = isInline ? `inline-feedback-email-${safeWord}` : `feedback-email-${safeWord}`;
+        const ratingId = isInline ? `inline-rating-${safeWord}` : `rating-${safeWord}`;
+        const ratingInputId = isInline ? `inline-rating-input-${safeWord}` : `rating-input-${safeWord}`;
+        const commentsId = isInline ? `inline-feedback-comments-${safeWord}` : `feedback-comments-${safeWord}`;
+        const successId = isInline ? `inline-feedback-success-${safeWord}` : `feedback-success-${safeWord}`;
         
         return `
             <form id="${formId}" class="feedback-form">

@@ -488,27 +488,7 @@ function deleteFeedback(word, feedbackIndex) {
     }
 }
 
-// Clear all existing feedback data on app initialization (for clean start)
-function clearAllFeedback() {
-    // Get all localStorage keys that start with 'feedback_'
-    const feedbackKeys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('feedback_')) {
-            feedbackKeys.push(key);
-        }
-    }
-    
-    // Remove all feedback data
-    feedbackKeys.forEach(key => {
-        localStorage.removeItem(key);
-    });
-    
-    console.log(`Cleared ${feedbackKeys.length} feedback entries for clean start`);
-}
-
-// Clear all feedback on app initialization (remove this after first clean deployment)
-clearAllFeedback();
+// Feedback data cleared for clean deployment
 
 window.submitFeedback = submitFeedback;
 window.setRating = setRating;

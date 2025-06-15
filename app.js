@@ -133,7 +133,7 @@ window.closeDashboard = closeDashboard;
 // GitHub Integration Configuration
 const GITHUB_CONFIG = {
     owner: 'tislov-dev', // Your GitHub username
-    repo: '3d-word-globe-dashboard', // Your repository name
+    repo: '3d-word-globe-clean', // Your repository name
     apiBase: 'https://api.github.com'
 };
 
@@ -257,10 +257,13 @@ async function loadFeedback(word) {
     
     // Load feedback only from GitHub Issues
     try {
+        console.log(`Loading feedback for word: ${word} from repo: ${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}`);
         const issues = await fetchGitHubIssues(word);
+        console.log(`Found ${issues ? issues.length : 0} issues for word: ${word}`);
         
         if (issues && issues.length > 0) {
             allFeedback = issues.map(issue => parseIssueToFeedback(issue));
+            console.log(`Parsed ${allFeedback.length} feedback items`);
         }
     } catch (error) {
         console.warn('Could not load GitHub issues:', error);
@@ -449,7 +452,10 @@ function clearAllFeedback() {
         localStorage.removeItem(key);
     });
     
-    console.log(`Cleared ${feedbackKeys.length} feedback entries for clean start`);
+    // Also clear any session storage
+    sessionStorage.clear();
+    
+    console.log(`Cleared ${feedbackKeys.length} feedback entries and session storage for clean start`);
 }
 
 // Clear all feedback on app initialization (remove this after deployment)

@@ -431,18 +431,33 @@ function showAddFeedbackForm(word) {
     }
 }
 
-function deleteFeedback(word, feedbackIndex) {
-    // Since feedback is now stored only in GitHub Issues,
-    // deletion must be done through GitHub directly
-    alert('To delete feedback, please go to the GitHub Issues page and close/delete the corresponding issue.');
+// Feedback deletion handled through GitHub Issues interface
+
+// Clear all existing feedback data on app initialization (for clean start)
+function clearAllFeedback() {
+    // Get all localStorage keys that start with 'feedback_'
+    const feedbackKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('feedback_')) {
+            feedbackKeys.push(key);
+        }
+    }
+    
+    // Remove all feedback data
+    feedbackKeys.forEach(key => {
+        localStorage.removeItem(key);
+    });
+    
+    console.log(`Cleared ${feedbackKeys.length} feedback entries for clean start`);
 }
 
-// Feedback data cleared for clean deployment
+// Clear all feedback on app initialization (remove this after deployment)
+clearAllFeedback();
 
 window.submitFeedback = submitFeedback;
 window.setRating = setRating;
 window.showAddFeedbackForm = showAddFeedbackForm;
-window.deleteFeedback = deleteFeedback;
 
 // Search functionality
 let searchResults = [];
@@ -1432,11 +1447,6 @@ function setupDynamicEventListeners() {
             
             if (action === 'add-new' && word) {
                 showAddFeedbackForm(word);
-            } else if (action === 'delete' && word) {
-                const feedbackIndex = parseInt(e.target.dataset.feedbackIndex);
-                if (!isNaN(feedbackIndex)) {
-                    deleteFeedback(word, feedbackIndex);
-                }
             }
         }
     });
